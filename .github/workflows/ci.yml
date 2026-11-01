@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e
+      - uses: actions/setup-python@6d4fd22b2046
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: python -m pytest tests -q
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e
+      - uses: docker/setup-buildx-action@f87e5991a6d7
+      - uses: docker/build-push-action@c3c9e263c25d
+        with:
+          context: .
+          push: false
+          load: true
+          tags: plain-language-desk:${{ github.sha }}
+
+      - name: Proof — no shell in the runtime image
+        run: |
+          if docker run --rm --entrypoint /bin/sh plain-language-desk:${{ github.sha }} -c 'echo pwned' 2>/dev/null; then
+            echo '::error::the runtime image contains a shell'
+            exit 1
+          fi
+          echo "shell exec refused, as required"
+
+      - name: Proof — non-root, caps dropped, read-only rootfs, score round-trip
+        run: |
+          CID=$(docker run -d --rm --read-only --tmpfs /tmp --cap-drop ALL \
+            --security-opt no-new-privileges -p 8080:8080 \
+            plain-language-desk:${{ github.sha }})
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:8080/healthz
+          curl -fsS -X POST http://localhost:8080/score \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"Short active sentence. You can read it in one pass."}' | grep -q '"band"'
+          docker rm -f "$CID" >/dev/null
+
+      - name: Scan — fail on CRITICAL or HIGH
+        uses: aquasecurity/trivy-action@8f28faec2651
+        with:
+          image-ref: plain-language-desk:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: SBOM
+        uses: aquasecurity/trivy-action@8f28faec2651
+        with:
+          image-ref: plain-language-desk:${{ github.sha }}
+          format: 'cyclonedx'
+          output: 'sbom.cdx.json'
+          exit-code: '0'
+      - uses: actions/upload-artifact@cf430e030ddb
+        with:
+          name: sbom
+          path: sbom.cdx.json
