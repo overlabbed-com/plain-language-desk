@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""dsh-writing-score.py — deterministic plain-language scorer for the DSH writing standard.
+"""writing-score.py — deterministic plain-language scorer (WPS).
 
-Layer 1 (this script): rules WS-01..WS-09 from ~/.dsh/docs/writing-standard.md,
+Layer 1 (this script): rules WS-01..WS-09 from the writing standard,
 applied with fixed thresholds and word lists. Same input, same score.
 Layer 2 (overlay): the session passes --emit-jpacket output to the clef-decide
 decision engine (one typed score site per WS-J rule) and folds the results back
@@ -21,7 +21,7 @@ VERSION = "WPS/1.1"
 BAR = 80
 GREEN = 90
 CONCERN = 65
-DEFAULT_LEDGER = os.path.expanduser("~/.dsh/docs/writing-standard.scores.json")
+DEFAULT_LEDGER = os.path.expanduser("~/.writing-standard/scores.json")
 
 ABBREV = {"e.g", "i.e", "vs", "etc", "app", "no", "fig", "dr", "mr", "mrs", "ms",
           "jr", "sr", "st", "approx", "inc", "ltd", "cf", "al", "seq"}
@@ -95,7 +95,7 @@ THERE_RE = re.compile(r"^\s*there\s+(is|are|was|were)\b", re.I)
 ACRO_RE = re.compile(r"\b[A-Z][A-Z0-9]{1,7}s?\b")
 ROMAN = {"II", "III", "IV", "VI", "VII", "VIII", "IX", "XI", "XII"}
 ACRO_WHITELIST = {
-    "WS", "WPS", "DSH", "FAA", "DDR", "MCP", "LLM", "KB", "CI", "PR", "GHA",
+    "WS", "WPS", "FAA", "DDR", "MCP", "LLM", "KB", "CI", "PR", "GHA",
     "AI", "YAML", "JSON", "HTTP", "HTTPS", "URL", "URI", "API", "SSH", "TLS",
     "DNS", "TCP", "UDP", "IP", "MAC", "VLAN", "VPN", "OIDC", "SSO", "RBAC",
     "CVE", "SQL", "UTC", "RFC", "WAF", "CDN", "GPU", "CPU", "RAM", "SSD",

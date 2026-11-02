@@ -104,12 +104,14 @@ checkable source of truth for what gets deducted and why, and the goldens
 replay its behavior.
 
 The scorer code is vendored from a private writing-standard tool (WPS/1.1,
-2026-10-31). It is pinned, not just claimed: `tests/test_parity.py` fails if
-the vendored file's sha256 (`2329248ae069…`) changes, and replays golden
-fixtures the original generated. The honest limit: the original is a
-single-machine artifact — the hash proves the vendored copy has not drifted,
-but nothing public lets you diff it against the source it names. The rules,
-citations, and goldens are in this repo; argue with those.
+2026-10-31) — vendored under a neutral name, with its private paths and
+identity references genericized at import. It is pinned, not just claimed:
+`tests/test_parity.py` fails if the vendored file's sha256 (`77c5075ac9…`)
+changes, and replays golden fixtures the original generated — the goldens
+prove the genericization touched nothing behavioral. The honest limit: the
+original is a single-machine artifact — nothing public lets you diff the
+original itself. The rules, citations, and goldens are in this repo; argue
+with those.
 
 ## Development
 
