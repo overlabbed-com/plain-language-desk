@@ -34,20 +34,25 @@ def band(score: int | None) -> str:
     return "fail"
 
 
-async def score_text(text: str) -> dict[str, Any]:
-    """Score one document and return the report the API exposes."""
+async def score_text(text: str, scorer_path: Path | None = None) -> dict[str, Any]:
+    """Score one document and return the report the API exposes.
+
+    scorer_path selects the bundle's own deterministic scorer when the active
+    bundle ships one; the vendored FAA scorer is the default.
+    """
     if not text or not text.strip():
         raise ValueError("text must not be empty")
     if len(text) > MAX_TEXT_CHARS:
         raise ValueError(f"text exceeds the {MAX_TEXT_CHARS} character cap")
 
+    script = str(scorer_path) if scorer_path else str(VENDOR_SCORER)
     fh = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
     try:
         fh.write(text)
         fh.close()
         proc = await asyncio.create_subprocess_exec(
             "python3",
-            str(VENDOR_SCORER),
+            script,
             "--file",
             fh.name,
             "--json",

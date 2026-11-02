@@ -1,0 +1,8 @@
+{
+  "id": "iso-24495",
+  "version": "1.0.0",
+  "bar": 80,
+  "scorer": "ISO24495/1.0",
+  "source": "ISO 24495-1:2023 Plain language — Part 1: Governing principles and guidelines (ISO/TC 37, June 2023); encoded as mechanical proxies for the four reader outcomes, not as the standard's text",
+  "modes": ["minimal", "full"]
+}

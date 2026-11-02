@@ -29,6 +29,10 @@ class Ruleset:
         # BAR env overrides the bundle's bar; the bundle value is the default.
         self.bar = int(os.environ.get("BAR", cfg["bar"]))
         self.scorer = cfg.get("scorer", "WPS/1.1")
+        # A bundle may carry its own deterministic scorer with the same CLI
+        # contract as the vendored FAA one; without one the FAA scorer applies.
+        scorer = path / "scorer.py"
+        self.scorer_path = scorer if scorer.exists() else None
         self.full_prompt = (path / "rewrite-prompt-full.txt").read_text()
         self.minimal_prompt = (path / "rewrite-prompt-minimal.txt").read_text()
 
@@ -44,7 +48,15 @@ class Ruleset:
 
 def ruleset_path() -> Path:
     override = os.environ.get("RULESET_PATH", "").strip()
-    return Path(override).resolve() if override else _BUNDLES_DIR / DEFAULT_BUNDLE
+    if not override:
+        return _BUNDLES_DIR / DEFAULT_BUNDLE
+    candidate = Path(override).expanduser()
+    # A bare name (no path separator) names a bundle shipped in the package.
+    if not candidate.exists() and "/" not in override and "\\" not in override:
+        shipped = _BUNDLES_DIR / override
+        if shipped.is_dir():
+            return shipped
+    return candidate.resolve()
 
 
 @lru_cache(maxsize=8)

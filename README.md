@@ -42,7 +42,7 @@ rewrite stops improving.
 | `INFERENCE_API_KEY` | Bearer key, if the endpoint wants one | empty |
 | `INFERENCE_EXTRA_JSON` | Raw JSON merged into each request body, for engine-specific kwargs | empty |
 | `INFERENCE_TIMEOUT` / `INFERENCE_MAX_RETRIES` | Per-call timeout and retry count | 120 s / 2 |
-| `RULESET_PATH` | A ruleset bundle directory | the shipped FAA bundle |
+| `RULESET_PATH` | A ruleset bundle directory, or the bare name of a shipped bundle | the shipped FAA bundle |
 | `BAR` | Pass bar | 80 (bundle value) |
 | `MAX_ROUNDS` | Default round cap for `/improve` | 3 (request can set 1–5) |
 | `AUTH_TOKEN` | Set it and every path but `/healthz` needs `Authorization: Bearer <token>` | unset — open |
@@ -64,14 +64,23 @@ kit anywhere.
 
 The standard is data, not code. A bundle is a directory: `RULESET.md` (the
 standard), `ruleset.json` (identity, bar, version), the two rewrite prompts,
-and `golden/` fixtures with pinned scores that the test suite replays. The
-FAA bundle (`faa-plain-language@1.0.0`, from FAA Order 1000.36A and the federal
-plain-language handbook) ships inside the package. Point `RULESET_PATH` at a
-work-tuned bundle to run a different standard — a new bundle, not a fork.
+a `scorer.py` when the standard has its own deterministic rules, and
+`golden/` fixtures with pinned scores that the test suite replays. Every
+response reports `ruleset` (id@version) and the `bar` that scored the text.
+Code blocks, tables, and front matter never cost points: the scorer strips
+machine-necessary formatting before it reads a word.
 
-Every response reports `ruleset` (id@version) and the `bar` that scored the
-text. Code blocks, tables, and front matter never cost points: the scorer
-strips machine-necessary formatting before it reads a word.
+Three bundles ship inside the package:
+
+| Bundle | Standard | Scorer |
+|--------|----------|--------|
+| `faa-plain-language` (default) | FAA Order 1000.36A and the federal plain-language handbook | vendored WPS/1.1 |
+| `iso-24495` | ISO 24495-1:2023 plain language — the four reader outcomes, encoded as mechanical proxies | ISO24495/1.0 |
+| `asd-ste100` | ASD-STE100 Issue 9 — structural rule categories only; the approved-word dictionary is license-restricted and is not reproduced | STE/1.0 |
+
+Select one with `RULESET_PATH=iso-24495` (bare name) or an absolute path to
+any bundle directory — a work-tuned standard is a new bundle, not a fork.
+A bundle without its own scorer scores with the vendored FAA engine.
 
 ## Hardening
 

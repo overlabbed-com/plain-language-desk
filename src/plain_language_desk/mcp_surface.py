@@ -19,7 +19,7 @@ mcp = FastMCP("plain-language-desk")
 async def score_prose(text: str) -> dict[str, Any]:
     """Grade prose against the active ruleset. Deterministic; changes nothing."""
     rs = current_ruleset()
-    report = await score_text(text)
+    report = await score_text(text, rs.scorer_path)
     return {**report, "ruleset": rs.ref, "bar": rs.bar}
 
 
@@ -43,5 +43,5 @@ async def improve_prose(
     rs = current_ruleset()
     client = OpenAICompatClient.from_env()
     return await improve_text(
-        text, audience, max_rounds, mode, client, rs.prompt(mode), rs.bar, rs.ref
+        text, audience, max_rounds, mode, client, rs.prompt(mode), rs.bar, rs.ref, rs.scorer_path
     )
