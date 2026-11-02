@@ -97,10 +97,19 @@ re-pin — in one commit.
 
 ## Provenance
 
-The deterministic scorer is the DSH writing-standard scorer (WPS/1.1,
-2026-10-31), vendored byte-identical and pinned by sha256 in the parity test.
-Its rule table and the FAA citations live in the bundle's `RULESET.md`. The
-scorer decides every score; the engine only rewrites.
+The scorer decides every score; the engine only rewrites. The rules it applies
+live in this repo: `RULESET.md` carries the rule table with its FAA citations
+(FAA Order 1000.36A, the federal plain-language handbook) — that bundle is the
+checkable source of truth for what gets deducted and why, and the goldens
+replay its behavior.
+
+The scorer code is vendored from a private writing-standard tool (WPS/1.1,
+2026-10-31). It is pinned, not just claimed: `tests/test_parity.py` fails if
+the vendored file's sha256 (`2329248ae069…`) changes, and replays golden
+fixtures the original generated. The honest limit: the original is a
+single-machine artifact — the hash proves the vendored copy has not drifted,
+but nothing public lets you diff it against the source it names. The rules,
+citations, and goldens are in this repo; argue with those.
 
 ## Development
 

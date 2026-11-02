@@ -68,7 +68,7 @@ create_runtime() { # $1 suffix, $2 path
     --network-configuration '{"networkMode":"PUBLIC"}' \
     --protocol-configuration "{\"serverProtocol\":\"HTTP\",\"port\":8080,\"path\":\"$2\"}" \
     --description "plain-language-desk ($MODE)" \
-    --tags Key=project,Value=plain-language-desk Key=env,Value="$MODE" \
+    --tags "project=plain-language-desk,env=$MODE" \
     ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
     --region "$REGION" --output json --no-cli-pager \
     | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["agentRuntimeId"])'
