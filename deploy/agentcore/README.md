@@ -21,6 +21,8 @@ export INFERENCE_BASE_URL=https://bedrock-runtime.eu-west-2.amazonaws.com/openai
 export INFERENCE_MODEL=openai.gpt-oss-20b-1:0
 export INFERENCE_API_KEY=<bedrock api key>
 export INFERENCE_EXTRA_JSON='{"reasoning_effort":"low"}'
+export AUTH_TOKEN='<random-256-bit-hex>'   # strongly recommended for any
+                                           # internet-reachable deploy (THREAT-MODEL TB3-1)
 ./deploy.sh        # prints PLD_SCORE_RUNTIME / PLD_IMPROVE_RUNTIME ids
 ```
 

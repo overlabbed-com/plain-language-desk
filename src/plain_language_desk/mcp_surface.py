@@ -37,6 +37,9 @@ async def improve_prose(
     """
     if mode not in VALID_MODES:
         raise ValueError(f"mode must be one of {VALID_MODES}, got {mode!r}")
+    # Mirror the HTTP path's 1-5 cap (main.py ImproveRequest): an unbounded
+    # max_rounds here means unbounded LLM calls + subprocess spawns per call.
+    max_rounds = max(1, min(5, int(max_rounds)))
     rs = current_ruleset()
     client = OpenAICompatClient.from_env()
     return await improve_text(

@@ -41,8 +41,13 @@ if [ "${CREATE_ROLE:-0}" = "1" ]; then
   $AWS iam delete-role-policy --role-name "$ROLE_NAME" --policy-name ecr-logs-minimal 2>/dev/null
   $AWS iam delete-role --role-name "$ROLE_NAME" 2>/dev/null && echo "deleted role $ROLE_NAME" || echo "role $ROLE_NAME absent"
 fi
-# The CloudWatch log group AgentCore auto-creates outlives the runtime:
-$AWS logs describe-log-groups --region "$REGION" --no-cli-pager --output json 2>/dev/null \
-  | python3 -c 'import sys,json;[print(g["logGroupName"]) for g in json.load(sys.stdin).get("logGroups",[]) if "plain_language_desk" in g["logGroupName"]]' \
-  | while read -r LG; do $AWS logs delete-log-group --log-group-name "$LG" --region "$REGION" && echo "deleted $LG"; done
+# The CloudWatch log group AgentCore auto-creates outlives the runtime. Delete
+# ONLY the exact groups of the runtimes resolved above (an exact-name match —
+# a substring match once wiped shared log groups that merely contained the
+# name base; THREAT-MODEL TB5-2).
+for ID in $IDS; do
+  LG="/aws/bedrock-agentcore/runtimes/$ID-DEFAULT"
+  $AWS logs delete-log-group --log-group-name "$LG" --region "$REGION" 2>/dev/null \
+    && echo "deleted $LG" || echo "log group $LG absent or already gone"
+done
 echo "teardown done — verify: list-agent-runtimes returns none for $NAME_BASE"

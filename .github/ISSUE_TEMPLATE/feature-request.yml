@@ -1,0 +1,22 @@
+name: Feature request
+description: A capability, rule, or deployment target the service should have.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you tried to do and where the service fell short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What it should do instead. Rules belong in ruleset bundles — if your request is a new writing standard, a new bundle is the answer, not a fork.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I checked existing issues and the README first

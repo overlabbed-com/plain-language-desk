@@ -51,4 +51,7 @@ def test_improve_endpoint_reports_unconfigured_engine_as_503(monkeypatch):
     monkeypatch.delenv("INFERENCE_MODEL", raising=False)
     resp = client.post("/improve", json={"text": "Hello there."})
     assert resp.status_code == 503
-    assert "INFERENCE_BASE_URL" in resp.json()["detail"]
+    # The detail is a fixed string: internals (env names, scorer stderr,
+    # input snippets) are logged server-side, never returned (THREAT-MODEL
+    # TB1-8). Assert the fixed contract AND the absence of internals.
+    assert resp.json()["detail"] == "scoring failed; see server logs"
