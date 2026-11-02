@@ -1,6 +1,6 @@
 # Live test report: plain-language-desk on AWS Bedrock + AgentCore
 
-**2026-11-02 · eu-west-2 · account 530456407074 · image `v1.0.0-bedrock-test`
+**2026-11-02 · eu-west-2 · a single AWS account · image `v1.0.0-bedrock-test`
 (digest `sha256:c30ae16e…`, arm64 build of this branch)**
 
 The service was deployed twice and the same 8-check suite was run against both

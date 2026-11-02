@@ -126,8 +126,8 @@ Amazon Bedrock AgentCore Runtime is a first-class target:
 the lessons learned from the live eu-west-2 run.
 
 `deploy/k8s/` ships a kustomize tree — Deployment, Service, ServiceAccount,
-ConfigMap, and a deny-by-default NetworkPolicy — mirroring the homelab
-log-triage pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
+ConfigMap, and a deny-by-default NetworkPolicy — the standard internal-service
+pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
 setting `INFERENCE_BASE_URL`/`INFERENCE_MODEL` in `configmap.yaml`. CI
 publishes the image to `ghcr.io/overlabbed-com/plain-language-desk` on every
 merge to `main` (pin by digest in production).

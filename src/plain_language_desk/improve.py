@@ -62,7 +62,7 @@ class Completer(Protocol):
 class OpenAICompatClient:
     """OpenAI-compatible chat-completions client — one wire protocol, any engine.
 
-    Point INFERENCE_BASE_URL at the homelab Envoy gateway, a local vLLM or
+    Point INFERENCE_BASE_URL at an internal gateway, a local vLLM or
     Ollama, or a cloud endpoint. INFERENCE_EXTRA_JSON (optional, raw JSON) is
     merged into the request body top-level, for engines that need
     engine-specific kwargs (e.g. the gateway's GLM enable_thinking rule).

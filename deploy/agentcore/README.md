@@ -13,7 +13,7 @@ refuses prod-named resources unless `FORCE=1`.
 
 ```sh
 export MODE=prod                            # or test (default)
-export ACCOUNT_ID=530456407074 REGION=eu-west-2
+export ACCOUNT_ID=123456789012 REGION=eu-west-2   # your account, an AgentCore region
 export IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/plain-language-desk:<tag>   # arm64
 export CREATE_ROLE=1 CREATE_ECR=1           # role + ECR repo created if absent
 # inference backend (optional — omit for deterministic /score only):
@@ -37,7 +37,7 @@ export INFERENCE_EXTRA_JSON='{"reasoning_effort":"low"}'
 
 Every test prints PASS/FAIL with observed values; the JSON report is the artifact.
 
-## Lessons learned (2026-11-02, eu-west-2, account 530456407074)
+## Lessons learned (2026-11-02, eu-west-2, a single AWS account)
 
 1. **AgentCore Runtime is arm64-only** (at least eu-west-2). The release image
    must be multi-arch; the publish workflow now builds

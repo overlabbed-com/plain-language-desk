@@ -1,4 +1,4 @@
-# Deny-by-default posture, mirroring the homelab log-triage policy: ingress
+# Deny-by-default posture: ingress
 # only from inside the namespace, egress only DNS + the inference endpoint.
 # The egress rules below allow any HTTPS egress so INFERENCE_BASE_URL can point
 # anywhere OpenAI-compatible; if your engine is a known Service, replace the
