@@ -8,12 +8,25 @@ max_rounds model calls. The engine only rewrites; it never grants the score.
 
 import json
 import os
+import re
 from typing import Any, Protocol
 
 from .scorer import band, score_text
 
 NO_KEY_SENTINELS = ("", "unused", "not-needed")
 MAX_FINDINGS_IN_PROMPT = 40
+
+# Reasoning models that fold their thinking into the content field
+# (gpt-oss on Bedrock, GLM without the disable-thinking kwarg) would
+# otherwise feed their analysis channel to the scorer as prose.
+REASONING_TAG_RE = re.compile(
+    r"<(?:reasoning|think|thinking|thought)>.*?</(?:reasoning|think|thinking|thought)>\s*",
+    re.DOTALL,
+)
+
+
+def strip_reasoning(content: str) -> str:
+    return REASONING_TAG_RE.sub("", content)
 
 
 def build_rewrite_user_prompt(text: str, report: dict, audience: str) -> str:
@@ -113,6 +126,7 @@ class OpenAICompatClient:
                     if not choices:
                         raise RuntimeError("model returned no choices")
                     content = (choices[0].get("message") or {}).get("content") or ""
+                    content = strip_reasoning(content)
                     if not content.strip():
                         raise RuntimeError("model returned empty content")
                     return content
