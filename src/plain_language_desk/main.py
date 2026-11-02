@@ -93,7 +93,7 @@ def ping() -> dict[str, Any]:
 async def score(req: ScoreRequest) -> dict[str, Any]:
     try:
         rs = current_ruleset()
-        report = await score_text(req.text)
+        report = await score_text(req.text, rs.scorer_path)
     except (RuntimeError, ValueError) as exc:
         raise _http_error(exc) from exc
     return {**report, "ruleset": rs.ref, "bar": rs.bar}
@@ -118,6 +118,7 @@ async def improve(req: ImproveRequest) -> dict[str, Any]:
             rs.prompt(req.mode),
             rs.bar,
             rs.ref,
+            rs.scorer_path,
         )
     except (RuntimeError, ValueError) as exc:
         raise _http_error(exc) from exc

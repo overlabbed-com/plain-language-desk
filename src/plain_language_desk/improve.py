@@ -144,8 +144,9 @@ async def improve_text(
     system_prompt: str,
     bar: int,
     ruleset_ref: str,
+    scorer_path=None,
 ) -> dict[str, Any]:
-    original = await score_text(text)
+    original = await score_text(text, scorer_path)
     best_score = original["score"]
     best_text = text
     best_report = original
@@ -161,7 +162,7 @@ async def improve_text(
         rewritten = rewritten.strip()
         if not rewritten or rewritten == best_text.strip():
             break
-        report = await score_text(rewritten)
+        report = await score_text(rewritten, scorer_path)
         if report["score"] is not None and (best_score is None or report["score"] > best_score):
             findings_applied = _rule_names(best_report["findings"])
             best_score = report["score"]
