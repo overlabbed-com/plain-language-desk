@@ -3,7 +3,8 @@
 Prose in, plain-language prose out. One service scores prose against the FAA
 standard for plain language and returns it rewritten to the bar. You choose
 the engine. Any tool that speaks HTTP or MCP can call it, and it runs anywhere
-a container runs.
+a container runs. The image is public on GitHub's container registry, so the
+pull below needs no credentials.
 
 ## Quick start
 
@@ -12,7 +13,7 @@ docker run --rm -p 8080:8080 \
   -e INFERENCE_BASE_URL=https://your-gateway.example/v1 \
   -e INFERENCE_MODEL=your-model \
   -e INFERENCE_API_KEY=$TOKEN \
-  plain-language-desk
+  ghcr.io/overlabbed-com/plain-language-desk:latest
 
 curl -s localhost:8080/score -H 'Content-Type: application/json' \
   -d '{"text":"It shall be noted that the aforementioned provisions are required."}'
@@ -51,12 +52,13 @@ rewrite stops improving.
 
 One process serves both. The HTTP API lives at `/score`, `/improve`,
 `/healthz`, and `/ping`. The MCP surface lives at `/mcp` with the tools
-`score_prose` and `improve_prose` — DSH, Claude Code, OMP, pi, and any other
+`score_prose` and `improve_prose` — DSH, Claude Code, omp, pi, and any other
 MCP client call it directly. No harness-specific code exists in the service.
 
-The same container deploys to AWS Bedrock AgentCore Runtime unchanged: it
+The same container deploys to Amazon Bedrock AgentCore Runtime unchanged: it
 listens on port 8080 (`PORT` overrides it), answers `/ping` for the runtime's
-health probe, and speaks plain JSON over HTTP — no cloud SDK anywhere.
+health probe, and speaks plain JSON over HTTP — no cloud software development
+kit anywhere.
 
 ## Ruleset bundles
 
@@ -82,8 +84,8 @@ promised — CI fails the build if any proof fails:
   under exactly that posture.
 - Both base images are pinned by digest; dependencies install from the
   package metadata, with no build tools in the final image.
-- Every build ships an SBOM, and the scanner fails on CRITICAL or HIGH
-  findings.
+- Every build ships a software bill of materials, and the scanner fails on
+  critical or high findings.
 - Port and health-check path env-configurable (`PORT`, `/ping` compatible) —
   the AgentCore Runtime contract, and any kubelet or load balancer probe, out
   of the box.
