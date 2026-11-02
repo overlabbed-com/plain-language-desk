@@ -3,3 +3,15 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+
+# smoke-suite output (default --report path)
+smoke-report.json
+smoke-agentcore.json
+
+# build/coverage artifacts
+dist/
+build/
+*.egg-info
+.coverage
+coverage.xml
+htmlcov/
