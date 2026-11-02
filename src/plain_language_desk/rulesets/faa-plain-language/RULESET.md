@@ -72,5 +72,5 @@ a rule above changes, both prompts change in the same commit.
 Nine principles resist a regex but not judgment (direct address, organization,
 present tense, and so on). The source standard scores them with a decision
 model as an advisory J-score that never gates. This service scores the
-deterministic layer only; the J-score machinery stays with the DSH flywheel
+deterministic layer only; the advisory J-score machinery stays out of this service
 until a bundle needs it.

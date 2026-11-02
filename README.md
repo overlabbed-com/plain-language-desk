@@ -52,7 +52,7 @@ rewrite stops improving.
 
 One process serves both. The HTTP API lives at `/score`, `/improve`,
 `/healthz`, and `/ping`. The MCP surface lives at `/mcp` with the tools
-`score_prose` and `improve_prose` — DSH, Claude Code, omp, pi, and any other
+`score_prose` and `improve_prose` — Claude Code, any MCP client, or plain HTTP callers:
 MCP client call it directly. No harness-specific code exists in the service.
 
 The same container deploys to Amazon Bedrock AgentCore Runtime unchanged: it
