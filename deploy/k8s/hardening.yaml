@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: plain-language-desk
+  namespace: plain-language-desk
+  labels:
+    app.kubernetes.io/name: plain-language-desk
+spec:
+  selector:
+    app.kubernetes.io/name: plain-language-desk
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: plain-language-desk
+  namespace: plain-language-desk
+  labels:
+    app.kubernetes.io/name: plain-language-desk
+# The desk talks to nothing in the cluster API — no token, no exceptions.
+automountServiceAccountToken: false

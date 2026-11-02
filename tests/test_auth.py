@@ -33,5 +33,6 @@ def test_token_required_when_configured(monkeypatch):
         ).status_code
         == 200
     )
-    # Probes stay open so a load balancer or kubelet can health-check.
+    # Probes stay open so AgentCore, a kubelet, or a load balancer can health-check.
     assert client.get("/healthz").status_code == 200
+    assert client.get("/ping").status_code == 200

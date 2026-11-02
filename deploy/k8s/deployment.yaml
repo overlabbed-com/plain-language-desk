@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plain-language-desk
+  namespace: plain-language-desk
+  annotations:
+    # Env is snapshot at pod start; restart on config change so a model repoint
+    # never runs stale (house pattern, reloader is installed cluster-wide).
+    reloader.stakater.com/auto: "true"
+  labels:
+    app.kubernetes.io/name: plain-language-desk
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plain-language-desk
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: plain-language-desk
+    spec:
+      serviceAccountName: plain-language-desk
+      securityContext:
+        # Matches the image: distroless nonroot is uid/gid 65532.
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+      containers:
+        - name: desk
+          # Pin by digest in production; :latest tracks the repo's main branch.
+          image: ghcr.io/overlabbed-com/plain-language-desk:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: plain-language-desk-config
+          env:
+            # Engine credential, if the endpoint wants one — never in a ConfigMap.
+            - name: INFERENCE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: plain-language-desk-secrets
+                  key: INFERENCE_API_KEY
+                  optional: true
+            # Lock the desk with one env var; leave unset for an open LAN service.
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: plain-language-desk-secrets
+                  key: AUTH_TOKEN
+                  optional: true
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi

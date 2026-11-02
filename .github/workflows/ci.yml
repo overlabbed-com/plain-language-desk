@@ -46,13 +46,27 @@ jobs:
             --security-opt no-new-privileges -p 8080:8080 \
             plain-language-desk:${{ github.sha }})
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then break; fi
+            if curl -fsS http://localhost:8080/ping >/dev/null 2>&1; then break; fi
             sleep 1
           done
+          curl -fsS http://localhost:8080/ping
           curl -fsS http://localhost:8080/healthz
           curl -fsS -X POST http://localhost:8080/score \
             -H 'Content-Type: application/json' \
             -d '{"text":"Short active sentence. You can read it in one pass."}' | grep -q '"band"'
+          docker rm -f "$CID" >/dev/null
+
+      - name: Proof — PORT env override honored in the container
+        run: |
+          CID=$(docker run -d --rm --read-only --tmpfs /tmp --cap-drop ALL \
+            --security-opt no-new-privileges -e PORT=8099 -p 8099:8099 \
+            plain-language-desk:${{ github.sha }})
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8099/ping >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:8099/ping
+          curl -fsS http://localhost:8099/healthz
           docker rm -f "$CID" >/dev/null
 
       - name: Scan — fail on CRITICAL or HIGH
@@ -74,3 +88,28 @@ jobs:
         with:
           name: sbom
           path: sbom.cdx.json
+
+  publish:
+    # Consumer-ready image: main publishes to GHCR so deploy/k8s and AgentCore
+    # (`agentcore deploy`) consume the same artifact the CI proofs ran against.
+    if: github.ref == 'refs/heads/main'
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
