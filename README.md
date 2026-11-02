@@ -49,10 +49,14 @@ rewrite stops improving.
 
 ## Surfaces
 
-One process serves both. The HTTP API lives at `/score`, `/improve`, and
-`/healthz`. The MCP surface lives at `/mcp` with the tools `score_prose` and
-`improve_prose` — DSH, Claude Code, OMP, pi, and any other MCP client call it
-directly. No harness-specific code exists in the service.
+One process serves both. The HTTP API lives at `/score`, `/improve`,
+`/healthz`, and `/ping`. The MCP surface lives at `/mcp` with the tools
+`score_prose` and `improve_prose` — DSH, Claude Code, OMP, pi, and any other
+MCP client call it directly. No harness-specific code exists in the service.
+
+The same container deploys to AWS Bedrock AgentCore Runtime unchanged: it
+listens on port 8080 (`PORT` overrides it), answers `/ping` for the runtime's
+health probe, and speaks plain JSON over HTTP — no cloud SDK anywhere.
 
 ## Ruleset bundles
 
@@ -80,6 +84,9 @@ promised — CI fails the build if any proof fails:
   package metadata, with no build tools in the final image.
 - Every build ships an SBOM, and the scanner fails on CRITICAL or HIGH
   findings.
+- Port and health-check path env-configurable (`PORT`, `/ping` compatible) —
+  the AgentCore Runtime contract, and any kubelet or load balancer probe, out
+  of the box.
 - No secrets live in layers: configuration arrives at runtime by environment,
   and nothing in the image reads it at build time.
 
@@ -100,3 +107,12 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/python -m pytest tests -q
 .venv/bin/python -m plain_language_desk     # serve on :8080
 ```
+
+## Deploying
+
+`deploy/k8s/` ships a kustomize tree — Deployment, Service, ServiceAccount,
+ConfigMap, and a deny-by-default NetworkPolicy — mirroring the homelab
+log-triage pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
+setting `INFERENCE_BASE_URL`/`INFERENCE_MODEL` in `configmap.yaml`. CI
+publishes the image to `ghcr.io/overlabbed-com/plain-language-desk` on every
+merge to `main` (pin by digest in production).

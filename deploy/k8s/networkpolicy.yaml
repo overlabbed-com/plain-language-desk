@@ -1,0 +1,64 @@
+# Deny-by-default posture, mirroring the homelab log-triage policy: ingress
+# only from inside the namespace, egress only DNS + the inference endpoint.
+# The egress rules below allow any HTTPS egress so INFERENCE_BASE_URL can point
+# anywhere OpenAI-compatible; if your engine is a known Service, replace the
+# `ipBlock` with its namespace/pod selector and drop the rest.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: plain-language-desk-ingress
+  namespace: plain-language-desk
+  labels:
+    app.kubernetes.io/name: plain-language-desk
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: plain-language-desk
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}  # same namespace
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: plain-language-desk-egress
+  namespace: plain-language-desk
+  labels:
+    app.kubernetes.io/name: plain-language-desk
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: plain-language-desk
+  policyTypes:
+    - Egress
+  egress:
+    # DNS (CoreDNS) — without a :53 rule an Egress policy denies DNS and every
+    # inference call dies at name resolution (the log-triage lesson).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # The OpenAI-compatible engine — any endpoint, over HTTPS (or plain HTTP
+    # for an in-cluster gateway). Tighten to a pod selector when you know it.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP

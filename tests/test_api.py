@@ -14,6 +14,13 @@ def test_healthz():
     assert resp.json() == {"ok": True}
 
 
+def test_ping():
+    # AgentCore Runtime's health probe path.
+    resp = client.get("/ping")
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+
+
 def test_score_endpoint_returns_the_report_with_the_ruleset_ref():
     resp = client.post("/score", json={"text": "Short active sentence. You can read it in one pass."})
     assert resp.status_code == 200

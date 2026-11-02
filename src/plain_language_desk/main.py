@@ -23,7 +23,8 @@ app = FastAPI(title="plain-language-desk", version="0.1.0")
 @app.middleware("http")
 async def bearer_auth(request: Request, call_next):
     token = os.environ.get("AUTH_TOKEN", "").strip()
-    if token and request.url.path != "/healthz":
+    # Probes stay open so AgentCore, a kubelet, or a load balancer can health-check.
+    if token and request.url.path not in ("/healthz", "/ping"):
         if request.headers.get("authorization", "") != f"Bearer {token}":
             return JSONResponse({"detail": "unauthorized"}, status_code=401)
     return await call_next(request)
@@ -73,6 +74,12 @@ def _http_error(exc: Exception, status: int = 502) -> HTTPException:
 
 @app.get("/healthz")
 def healthz() -> dict[str, Any]:
+    return {"ok": True}
+
+
+@app.get("/ping")
+def ping() -> dict[str, Any]:
+    # AgentCore Runtime probes /ping on the container port; keep it cheap and open.
     return {"ok": True}
 
 
