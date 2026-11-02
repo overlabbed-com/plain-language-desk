@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in the service behaves differently than documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Check existing issues first — if yours
+        matches, add a 👍 instead of a duplicate.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: The behavior you saw, vs the behavior the README documents.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: >
+        A minimal request (curl or MCP call) and the response. For /improve,
+        include your INFERENCE_MODEL — behavior can be engine-specific.
+      placeholder: |
+        curl -s localhost:8080/score -H 'Content-Type: application/json' \
+          -d '{"text":"..."}'
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - HTTP /score
+        - HTTP /improve
+        - MCP
+        - Deployment (k8s / AgentCore)
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Image version or digest
+      description: "`latest` is not a version — the digest or tag you run."
+      placeholder: "ghcr.io/overlabbed-com/plain-language-desk@sha256:…"
+    validations:
+      required: true

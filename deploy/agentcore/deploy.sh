@@ -38,7 +38,7 @@ ENV_ARGS=()
 if [ -n "${INFERENCE_BASE_URL:-}" ]; then
   # JSON form: the shorthand key=value map cannot carry values containing
   # commas/quotes/equals (e.g. INFERENCE_EXTRA_JSON={"reasoning_effort":"low"}).
-  ENV_JSON=$(python3 -c 'import json,os;print(json.dumps({k:os.environ.get(k,"") for k in ["INFERENCE_BASE_URL","INFERENCE_MODEL","INFERENCE_API_KEY","INFERENCE_EXTRA_JSON"]}))')
+  ENV_JSON=$(python3 -c 'import json,os;print(json.dumps({k:os.environ.get(k,"") for k in ["INFERENCE_BASE_URL","INFERENCE_MODEL","INFERENCE_API_KEY","INFERENCE_EXTRA_JSON","AUTH_TOKEN"]}))')
   ENV_ARGS+=(--environment-variables "$ENV_JSON")
 fi
 
