@@ -6,10 +6,16 @@ Verified end to end in eu-west-2 on 2026-11-02 (see the smoke suite below).
 
 ## Deploy
 
+`MODE=test` (default) names everything under `plain_language_desk_test` and is
+what `teardown.sh` deletes freely. `MODE=prod` names it under
+`plain_language_desk`, tags `env=prod`, and is meant to stay up — `teardown.sh`
+refuses prod-named resources unless `FORCE=1`.
+
 ```sh
+export MODE=prod                            # or test (default)
 export ACCOUNT_ID=530456407074 REGION=eu-west-2
 export IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/plain-language-desk:<tag>   # arm64
-export CREATE_ROLE=1                       # creates the minimal runtime role
+export CREATE_ROLE=1 CREATE_ECR=1           # role + ECR repo created if absent
 # inference backend (optional — omit for deterministic /score only):
 export INFERENCE_BASE_URL=https://bedrock-runtime.eu-west-2.amazonaws.com/openai/v1
 export INFERENCE_MODEL=openai.gpt-oss-20b-1:0
@@ -72,3 +78,10 @@ Every test prints PASS/FAIL with observed values; the JSON report is the artifac
 9. **Cost:** gpt-oss-20b on short prose costs fractions of a cent per improve
    round; an idle runtime with no active sessions bills nothing. Delete the
    runtime when done (`teardown.sh`).
+10. **Deleting by bare runtime name returns a misleading `AccessDenied`.**
+   `DeleteAgentRuntime` wants the FULL id (`name-XXXXXXXXXX`). CloudTrail
+   showed the same user getting AccessDenied for bare names and success for
+   full ids — across BOTH CLI versions (v2 succeeded with full ids three
+   times; an early "v1 works, v2 is denied" read was confounded by which
+   identifier each call carried). `teardown.sh` resolves name-prefix matches
+   to full ids via `list-agent-runtimes` before deleting.
