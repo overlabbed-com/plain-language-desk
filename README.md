@@ -106,7 +106,7 @@ replay its behavior.
 The scorer code is vendored from a private writing-standard tool (WPS/1.1,
 2026-10-31) — vendored under a neutral name, with its private paths and
 identity references genericized at import. It is pinned, not just claimed:
-`tests/test_parity.py` fails if the vendored file's sha256 (`77c5075ac9…`)
+`tests/test_parity.py` fails if the vendored file's sha256 (`cdeb12d79f…`)
 changes, and replays golden fixtures the original generated — the goldens
 prove the genericization touched nothing behavioral. The honest limit: the
 original is a single-machine artifact — nothing public lets you diff the

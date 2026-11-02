@@ -22,7 +22,7 @@ GOLDEN_DIR = (
     Path(__file__).resolve().parents[1] / "src" / "plain_language_desk" / "rulesets" / "faa-plain-language" / "golden"
 )
 
-VENDOR_SHA256 = "77c5075ac9472e5c9267a36544471c774cdb806d969e67fb66a31c522ce0ce8f"
+VENDOR_SHA256 = "cdeb12d79f11af06f1e0f09cc5a932e72def48c2f0c25644ad7f6fd01bb95d5f"
 GOLDENS = {
     "clean.md": 95,
     "mid.md": 57,

@@ -327,7 +327,7 @@ def score_file(path):
             continue  # designator label (B1, F2), not an abbreviation
         base = re.match(r"[A-Z]+", acro).group(0)
         if base in ACRO_WHITELIST:
-            continue  # RFC1918 / VLAN1: a specific instance of a whitelisted concept
+            continue  # a specific instance of a whitelisted concept (VLAN, RFC terms)
         if acro.lower() in lower_words:
             continue  # shouted word (AND, ONLY), not an acronym
         defined = f"({acro})" in prose_all
