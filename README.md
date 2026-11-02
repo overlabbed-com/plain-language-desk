@@ -52,7 +52,7 @@ rewrite stops improving.
 
 One process serves both. The HTTP API lives at `/score`, `/improve`,
 `/healthz`, and `/ping`. The MCP surface lives at `/mcp` with the tools
-`score_prose` and `improve_prose` — DSH, Claude Code, omp, pi, and any other
+`score_prose` and `improve_prose` — Claude Code, any MCP client, or plain HTTP callers:
 MCP client call it directly. No harness-specific code exists in the service.
 
 The same container deploys to Amazon Bedrock AgentCore Runtime unchanged: it
@@ -97,10 +97,21 @@ re-pin — in one commit.
 
 ## Provenance
 
-The deterministic scorer is the DSH writing-standard scorer (WPS/1.1,
-2026-10-31), vendored byte-identical and pinned by sha256 in the parity test.
-Its rule table and the FAA citations live in the bundle's `RULESET.md`. The
-scorer decides every score; the engine only rewrites.
+The scorer decides every score; the engine only rewrites. The rules it applies
+live in this repo: `RULESET.md` carries the rule table with its FAA citations
+(FAA Order 1000.36A, the federal plain-language handbook) — that bundle is the
+checkable source of truth for what gets deducted and why, and the goldens
+replay its behavior.
+
+The scorer code is vendored from a private writing-standard tool (WPS/1.1,
+2026-10-31) — vendored under a neutral name, with its private paths and
+identity references genericized at import. It is pinned, not just claimed:
+`tests/test_parity.py` fails if the vendored file's sha256 (`cdeb12d79f…`)
+changes, and replays golden fixtures the original generated — the goldens
+prove the genericization touched nothing behavioral. The honest limit: the
+original is a single-machine artifact — nothing public lets you diff the
+original itself. The rules, citations, and goldens are in this repo; argue
+with those.
 
 ## Development
 
@@ -117,8 +128,8 @@ Amazon Bedrock AgentCore Runtime is a first-class target:
 the lessons learned from the live eu-west-2 run.
 
 `deploy/k8s/` ships a kustomize tree — Deployment, Service, ServiceAccount,
-ConfigMap, and a deny-by-default NetworkPolicy — mirroring the homelab
-log-triage pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
+ConfigMap, and a deny-by-default NetworkPolicy — the standard internal-service
+pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
 setting `INFERENCE_BASE_URL`/`INFERENCE_MODEL` in `configmap.yaml`. CI
 publishes the image to `ghcr.io/overlabbed-com/plain-language-desk` on every
 merge to `main` (pin by digest in production).

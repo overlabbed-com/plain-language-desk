@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "bar": 80,
   "scorer": "WPS/1.1",
-  "source": "FAA Order 1000.36A and the FAA plain-language handbook, codified 2026-10-31 in the DSH writing standard",
+  "source": "FAA Order 1000.36A and the FAA plain-language handbook, codified 2026-10-31 as the plain-language writing standard",
   "modes": ["minimal", "full"]
 }

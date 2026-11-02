@@ -1,6 +1,6 @@
 """Entrypoint: uvicorn with a drain shorter than the pod's 30 s termination
 grace, so a running request cancels cleanly instead of meeting SIGKILL.
-Same pattern as the homelab log-triage service."""
+"""
 
 import os
 

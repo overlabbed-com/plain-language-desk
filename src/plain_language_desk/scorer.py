@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-VENDOR_SCORER = Path(__file__).parent / "vendor" / "dsh-writing-score.py"
+VENDOR_SCORER = Path(__file__).parent / "vendor" / "writing-score.py"
 EXPECTED_VERSION = "WPS/1.1"
 SCORER_TIMEOUT = float(os.environ.get("SCORER_TIMEOUT", "60"))
 MAX_TEXT_CHARS = 200_000

@@ -1,6 +1,6 @@
 """Native MCP surface: any MCP-speaking harness calls the desk directly.
 
-FastMCP tools mirror the HTTP operations. In the homelab this replaces the
+FastMCP tools mirror the HTTP operations. For an existing deployment this replaces the
 separate -mcp facade; elsewhere it is the only surface a harness needs.
 """
 

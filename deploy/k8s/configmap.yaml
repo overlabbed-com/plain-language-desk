@@ -7,8 +7,8 @@ metadata:
     app.kubernetes.io/name: plain-language-desk
 data:
   # One wire protocol: any OpenAI-compatible chat-completions endpoint.
-  # In-cluster example (Envoy AI Gateway); a cloud endpoint is the same shape.
-  INFERENCE_BASE_URL: "http://envoy-ai-ai-gateway-5216df4c.envoy-gateway-system.svc.cluster.local/v1"
+  # In-cluster example; a cloud endpoint is the same shape.
+  INFERENCE_BASE_URL: "http://your-openai-compatible-endpoint/v1"
   INFERENCE_MODEL: "glm-5.3-flash"
   INFERENCE_TIMEOUT: "120"
   INFERENCE_MAX_RETRIES: "2"

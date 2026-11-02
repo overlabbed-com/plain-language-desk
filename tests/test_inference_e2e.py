@@ -3,7 +3,7 @@
 No SDK, no mocking of the client internals — a localhost server speaks the
 chat-completions wire format, and the service's own httpx client completes a
 successful call through the full /improve flow, exactly as it would against
-the homelab gateway, vLLM, or any OpenAI-compatible endpoint.
+an internal gateway, vLLM, or any OpenAI-compatible endpoint.
 """
 
 import json
