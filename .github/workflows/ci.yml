@@ -110,6 +110,9 @@ jobs:
         with:
           context: .
           push: true
+          # AgentCore Runtime microVMs (and Apple Silicon hosts) run arm64;
+          # an amd64-only image cannot deploy there.
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}:latest

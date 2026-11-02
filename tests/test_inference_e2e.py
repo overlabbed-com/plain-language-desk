@@ -80,3 +80,59 @@ def test_improve_completes_a_real_inference_call_end_to_end(monkeypatch):
     finally:
         server.shutdown()
         server.server_close()
+
+
+class _ReasoningOpenAI(_FakeOpenAI):
+    """gpt-oss-on-Bedrock shape: the analysis channel rides inside content."""
+
+    def do_POST(self):  # noqa: N802 - stdlib handler naming
+        self.rfile.read(int(self.headers["Content-Length"]))
+        payload = json.dumps(
+            {
+                "id": "chatcmpl-reasoning",
+                "object": "chat.completion",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": (
+                                "<reasoning>The text is passive and archaic. "
+                                "Rewrite it actively without 'shall' or "
+                                "'aforementioned'.</reasoning>"
+                                + GOOD
+                            ),
+                        },
+                    }
+                ],
+            }
+        ).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+
+def test_improve_strips_engine_reasoning_blocks(monkeypatch):
+    """A reasoning model must not have its thinking scored as prose."""
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _ReasoningOpenAI)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{server.server_port}/v1"
+        monkeypatch.setenv("INFERENCE_BASE_URL", base)
+        monkeypatch.setenv("INFERENCE_MODEL", "reasoning-model")
+        monkeypatch.delenv("INFERENCE_API_KEY", raising=False)
+
+        resp = client.post("/improve", json={"text": BAD, "mode": "full"})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["text"] == GOOD
+        assert "<reasoning>" not in body["text"]
+        assert "reasoning" not in body["text"]
+        assert body["final_score"] >= body["bar"]
+    finally:
+        server.shutdown()
+        server.server_close()

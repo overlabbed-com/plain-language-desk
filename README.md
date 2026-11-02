@@ -112,6 +112,10 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 
 ## Deploying
 
+Amazon Bedrock AgentCore Runtime is a first-class target:
+[deploy/agentcore/](deploy/agentcore/README.md) ships the deploy/test kit and
+the lessons learned from the live eu-west-2 run.
+
 `deploy/k8s/` ships a kustomize tree — Deployment, Service, ServiceAccount,
 ConfigMap, and a deny-by-default NetworkPolicy — mirroring the homelab
 log-triage pattern. `kustomize build deploy/k8s | kubectl apply -f -` after
