@@ -53,8 +53,22 @@ if [ "${CREATE_ROLE:-0}" = "1" ]; then
   ROLE_NAME="${ROLE_NAME:-${NAME_BASE}-role}"
   aws iam create-role --role-name "$ROLE_NAME" \
     --assume-role-policy-document file://"$(dirname "$0")"/iam-trust.json 2>/dev/null || true
+  # Least privilege: ECR repo ARN + this name base's log-group prefix, not
+  # account-wide "*" (GetAuthorizationToken is account-scoped by AWS design).
+  ECR_REPO="${IMAGE_URI##*/}"; ECR_REPO="${ECR_REPO%%:*}"
+  POLICY=$(python3 -c '
+import json, os
+acct, region, repo, base = (os.environ[k] for k in ("ACCOUNT_ID","REGION","ECR_REPO","NAME_BASE"))
+print(json.dumps({"Version":"2012-10-17","Statement":[
+  {"Effect":"Allow","Action":"ecr:GetAuthorizationToken","Resource":"*"},
+  {"Effect":"Allow","Action":["ecr:BatchGetImage","ecr:GetDownloadUrlForLayer"],
+   "Resource":f"arn:aws:ecr:{region}:{acct}:repository/{repo}"},
+  {"Effect":"Allow","Action":["logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents","logs:DescribeLogStreams"],
+   "Resource":f"arn:aws:logs:{region}:{acct}:log-group:/aws/bedrock-agentcore/runtimes/{base}_*"},
+]}))')
+  echo "$POLICY" > "${TMPDIR:-/tmp}/pld-runtime-policy.json" && chmod 600 "${TMPDIR:-/tmp}/pld-runtime-policy.json"
   aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name ecr-logs-minimal \
-    --policy-document file://"$(dirname "$0")"/iam-permissions.json
+    --policy-document file://"${TMPDIR:-/tmp}/pld-runtime-policy.json"
   RUNTIME_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
 fi
 : "${RUNTIME_ROLE_ARN:?set RUNTIME_ROLE_ARN or CREATE_ROLE=1}"

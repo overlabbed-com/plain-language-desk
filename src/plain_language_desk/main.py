@@ -5,10 +5,13 @@ response always returns to the caller. Optional bearer auth via AUTH_TOKEN —
 whoever hosts the desk locks it with one env var.
 """
 
+import logging
 import os
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
@@ -69,7 +72,10 @@ def _default_rounds() -> int:
 
 
 def _http_error(exc: Exception, status: int = 502) -> HTTPException:
-    return HTTPException(status_code=status, detail=str(exc)[:300])
+    # str(exc) can embed scorer stderr or JSON-sniffed input; log server-side,
+    # return a fixed string (THREAT-MODEL TB1-8: no internals in 502 detail).
+    logger.error("score/improve failure: %s", str(exc)[:300])
+    return HTTPException(status_code=status, detail="scoring failed; see server logs")
 
 
 @app.get("/healthz")
@@ -85,8 +91,8 @@ def ping() -> dict[str, Any]:
 
 @app.post("/score")
 async def score(req: ScoreRequest) -> dict[str, Any]:
-    rs = current_ruleset()
     try:
+        rs = current_ruleset()
         report = await score_text(req.text)
     except (RuntimeError, ValueError) as exc:
         raise _http_error(exc) from exc
@@ -95,11 +101,12 @@ async def score(req: ScoreRequest) -> dict[str, Any]:
 
 @app.post("/improve")
 async def improve(req: ImproveRequest) -> dict[str, Any]:
-    rs = current_ruleset()
     try:
+        rs = current_ruleset()
         client = OpenAICompatClient.from_env()
-    except RuntimeError as exc:
-        # Unconfigured engine is a hosting problem, not a downstream failure.
+    except (RuntimeError, ValueError) as exc:
+        # Unconfigured engine or broken ruleset bundle: a hosting problem,
+        # not a downstream failure (THREAT-MODEL TB1-9).
         raise _http_error(exc, status=503) from exc
     try:
         return await improve_text(
