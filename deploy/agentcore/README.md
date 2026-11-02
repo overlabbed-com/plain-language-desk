@@ -21,10 +21,17 @@ export INFERENCE_BASE_URL=https://bedrock-runtime.eu-west-2.amazonaws.com/openai
 export INFERENCE_MODEL=openai.gpt-oss-20b-1:0
 export INFERENCE_API_KEY=<bedrock api key>
 export INFERENCE_EXTRA_JSON='{"reasoning_effort":"low"}'
-export AUTH_TOKEN='<random-256-bit-hex>'   # strongly recommended for any
-                                           # internet-reachable deploy (THREAT-MODEL TB3-1)
+export AUTH_TOKEN='<random-256-bit-hex>'   # TB3-1 mitigation — but see lesson 13:
+                                           # the token cannot be presented through
+                                           # the AgentCore invoke plane, so a
+                                           # token-protected runtime is not
+                                           # smoke-testable via AgentCore
 ./deploy.sh        # prints PLD_SCORE_RUNTIME / PLD_IMPROVE_RUNTIME ids
 ```
+
+`deploy.sh` prints runtime **ids**; `smoke.py` wants the full runtime **ARNs**
+(`arn:aws:bedrock-agentcore:<region>:<account>:runtime/<id>` — buildable from
+the id, or read them back with `get-agent-runtime`).
 
 ## Test (the demonstrable proof)
 
@@ -53,7 +60,8 @@ Every test prints PASS/FAIL with observed values; the JSON report is the artifac
    and the service answers 400 (FastAPI malformed-JSON, visible in runtime logs
    as `POST /score 400` while `/ping` stays 200).
 4. **Runtime names are `[a-zA-Z][a-zA-Z0-9_]{0,47}`** — no hyphens. Session
-   ids must be ≥ 32 characters.
+   ids must be **≥ 33 characters** (a 32-char id is rejected: `Invalid length
+   for parameter runtimeSessionId, value: 32, valid min length: 33`).
 5. **The runtime role needs only ECR read + CloudWatch logs writes**
    (iam-permissions.json). Nothing else. AgentCore auto-creates a log group
    named `/aws/bedrock-agentcore/runtimes/<id>-DEFAULT` that outlives the
@@ -87,3 +95,22 @@ Every test prints PASS/FAIL with observed values; the JSON report is the artifac
    times; an early "v1 works, v2 is denied" read was confounded by which
    identifier each call carried). `teardown.sh` resolves name-prefix matches
    to full ids via `list-agent-runtimes` before deleting.
+11. **A freshly created runtime role can fail the first `create-agent-runtime`
+   with `Access denied while validating ECR URI …`** — the role and its policy
+   exist but IAM propagation has not reached AgentCore's validation (observed
+   2026-11-02: policy verified correct via `get-role-policy`, create still
+   denied; a re-run ~1 min later succeeded). `deploy.sh` is safe to re-run —
+   the ECR and role steps are idempotent.
+12. **Runtime deletion is asynchronous and slow** (~4 min observed from
+   `DeleteAgentRuntime` to the name freeing up). Re-deploying the same names
+   immediately after `teardown.sh` fails with `ConflictException: An agent
+   with the specified name already exists` until `list-agent-runtimes`
+   returns empty for the name base.
+13. **`AUTH_TOKEN` cannot be presented through the AgentCore invoke plane.**
+   `invoke-agent-runtime` exposes no request-header parameter (verified against
+   the CLI parameter list 2026-11-02), so a client cannot send
+   `Authorization: Bearer …` to a token-protected runtime — the service answers
+   401 to every invoke. Consequence for TB3-1: the token mitigation is only
+   exercisable where clients reach the container's HTTP surface directly (k8s,
+   local); on an AgentCore runtime deploy it makes the service uncallable.
+   `smoke.py --auth-token` covers the local-container path.

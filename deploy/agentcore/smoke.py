@@ -9,7 +9,7 @@ PASS/FAIL with the observed values, so the output is the proof.
   smoke.py --runtime-score <arn> --runtime-improve <arn> --region eu-west-2
            [--profile studio-portal] [--report out.json]
 """
-import argparse, json, subprocess, sys, urllib.request, urllib.error
+import argparse, json, os, subprocess, sys, urllib.request, urllib.error
 
 BAD = ("It shall be noted that the aforementioned provisions are required to be "
        "verified by the addressees prior to the commencement of the undertaking of the work.")
@@ -28,9 +28,13 @@ def _parse_body(raw: bytes, content_type: str):
     return json.loads(raw or b"{}")
 
 class Local(Transport):
-    def __init__(self, base): self.base = base.rstrip("/")
+    def __init__(self, base, auth_token=None):
+        self.base = base.rstrip("/")
+        self.auth_token = (auth_token or "").strip()
     def _call(self, method, path, body=None, headers=None):
         h = {"Content-Type": "application/json"}
+        if self.auth_token:
+            h["Authorization"] = f"Bearer {self.auth_token}"
         h.update(headers or {})
         req = urllib.request.Request(self.base + path, method=method,
             data=json.dumps(body).encode() if body is not None else None,
@@ -107,6 +111,8 @@ def run(t: Transport, mode: str):
         s1, r1 = t.post("/score", {"text": BAD})
         s2, r2 = t.post("/score", {"text": BAD})
         s3, r3 = t.post("/score", {"text": "Verify the provisions before starting the work."})
+        if s1 != 200 or s2 != 200 or s3 != 200:
+            return False, f"/score -> HTTP {s1},{s2},{s3}: {r1.get('detail', r1)}"
         same = (r1["score"] == r2["score"] and r1["findings"] == r2["findings"])
         discriminates = r3["score"] > r1["score"]
         return (same and discriminates,
@@ -116,6 +122,8 @@ def run(t: Transport, mode: str):
     # 3. response shape carries the ruleset identity
     def score_shape():
         s, r = t.post("/score", {"text": BAD})
+        if s != 200:
+            return False, f"/score -> HTTP {s}: {r.get('detail', r)}"
         f = r["findings"][0]
         ok = (r["version"].startswith("WPS/") and r.get("ruleset") and r.get("bar") == 80
               and all(k in f for k in ("rule", "deduction", "line", "evidence")))
@@ -124,8 +132,10 @@ def run(t: Transport, mode: str):
 
     # 4. machine formatting is free
     def machine_free():
-        _, a = t.post("/score", {"text": BAD})
-        _, b = t.post("/score", {"text": MACHINE})
+        sa, a = t.post("/score", {"text": BAD})
+        sb, b = t.post("/score", {"text": MACHINE})
+        if sa != 200 or sb != 200:
+            return False, f"/score -> HTTP {sa},{sb}: {a.get('detail', a)}"
         return a["score"] == b["score"], f"prose {a['score']} == prose+code+table {b['score']}"
     check("score.machine_format_free", machine_free)
 
@@ -134,7 +144,9 @@ def run(t: Transport, mode: str):
         def improve(m=m):
             _, s = t.post("/score", {"text": BAD})
             sc, r = t.post("/improve", {"text": BAD, "mode": m, "max_rounds": 3})
-            ok = (sc == 200 and r["final_score"] > r["original_score"]
+            if sc != 200:
+                return False, f"mode={m} /improve -> HTTP {sc}: {r.get('detail', r)}"
+            ok = (r["final_score"] > r["original_score"]
                   and r["original_score"] == s["score"]
                   and "reasoning" not in r["text"] and "<think" not in r["text"])
             return ok, (f"mode={m} {r['original_score']} -> {r['final_score']} in {r['rounds']} round(s); "
@@ -144,7 +156,9 @@ def run(t: Transport, mode: str):
     # 6. ruleset echo consistency between surfaces
     def echo():
         _, a = t.post("/score", {"text": BAD})
-        _, b = t.post("/improve", {"text": BAD, "mode": "minimal", "max_rounds": 1})
+        sc, b = t.post("/improve", {"text": BAD, "mode": "minimal", "max_rounds": 1})
+        if sc != 200:
+            return False, f"/improve -> HTTP {sc}: {b.get('detail', b)}"
         return a["ruleset"] == b["ruleset"] and a["bar"] == b["bar"], f"ruleset {a['ruleset']} bar {a['bar']} consistent"
     check("surfaces.ruleset_echo_consistent", echo)
 
@@ -172,11 +186,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--local"); ap.add_argument("--runtime-score"); ap.add_argument("--runtime-improve")
     ap.add_argument("--region", default="eu-west-2"); ap.add_argument("--profile")
+    ap.add_argument("--auth-token", default=os.environ.get("AUTH_TOKEN", ""),
+                    help="bearer token for an AUTH_TOKEN-protected container (local mode; "
+                         "the AgentCore invoke API has no request-header parameter, so a "
+                         "token-protected runtime cannot be smoke-tested through it)")
     ap.add_argument("--report", default="smoke-report.json")
     a = ap.parse_args()
     if a.local:
-        mode, t = "local", Local(a.local)
+        mode, t = "local", Local(a.local, a.auth_token)
     elif a.runtime_score and a.runtime_improve:
+        if (a.auth_token or "").strip():
+            ap.error("--auth-token only works with --local: the AgentCore invoke API exposes "
+                     "no request-header parameter, so the bearer token cannot be presented "
+                     "through the invoke plane")
         mode, t = "agentcore", AgentCore(a.runtime_score, a.runtime_improve, a.region, a.profile)
     else:
         ap.error("--local or both --runtime-score and --runtime-improve required")

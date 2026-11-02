@@ -31,6 +31,11 @@ case "$MODE" in test|prod) ;; *) echo "MODE must be test or prod" >&2; exit 1;; 
 DEFAULT_BASE="plain_language_desk"
 [ "$MODE" = "test" ] && DEFAULT_BASE="plain_language_desk_test"
 NAME_BASE="${NAME_BASE:-$DEFAULT_BASE}"
+# The policy-writer python below reads ECR_REPO/NAME_BASE from the environment:
+# without the export the documented CREATE_ROLE=1 flow dies on KeyError (found
+# 2026-11-02 — both vars were script-internal).
+ECR_REPO="${IMAGE_URI##*/}"; ECR_REPO="${ECR_REPO%%:*}"
+export ECR_REPO NAME_BASE
 AWS="aws"
 $AWS --version | grep -q "aws-cli/2" || { echo "AWS CLI v2 required"; exit 1; }
 
