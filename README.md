@@ -77,6 +77,7 @@ Three bundles ship inside the package:
 | `faa-plain-language` (default) | FAA Order 1000.36A and the federal plain-language handbook | vendored WPS/1.1 |
 | `iso-24495` | ISO 24495-1:2023 plain language — the four reader outcomes, encoded as mechanical proxies | ISO24495/1.0 |
 | `asd-ste100` | ASD-STE100 Issue 9 — structural rule categories only; the approved-word dictionary is license-restricted and is not reproduced | STE/1.0 |
+| `din-8581` | DIN 8581-1 (2024) Einfache Sprache — the German-language standard; score German prose | DIN8581/1.0 |
 
 Select one with `RULESET_PATH=iso-24495` (bare name) or an absolute path to
 any bundle directory — a work-tuned standard is a new bundle, not a fork.

@@ -21,10 +21,14 @@ SRC = Path(__file__).resolve().parents[1] / "src" / "plain_language_desk"
 BUNDLES = SRC / "rulesets"
 ISO = BUNDLES / "iso-24495"
 STE = BUNDLES / "asd-ste100"
+DIN = BUNDLES / "din-8581"
+ALL_BUNDLES = [(ISO, "ISO-R", "iso-24495"), (STE, "STE-", "asd-ste100"),
+               (DIN, "DIN-R", "din-8581")]
 
 GOLDENS = {
     ISO: {"clean.md": 100, "mid.md": 76, "bad.md": 49},
     STE: {"clean.md": 100, "mid.md": 86, "bad.md": 54},
+    DIN: {"clean.md": 100, "mid.md": 91, "bad.md": 51},
 }
 
 # "shall" is an FAA-only violation (WS-04); neither alternate standard flags it.
@@ -32,10 +36,13 @@ SHALL_TEXT = "The operator shall review the report before the meeting starts."
 # One semicolon is an STE violation (Rule 8.1 bans the mark outright); the
 # FAA/ISO layer only objects at three or more in one sentence.
 SEMICOLON_TEXT = "The check compares two digests; the values must match."
+# German Vorgangspassiv: the DIN bundle flags it; the English-only layers
+# have no German passive detector and let it pass.
+GERMAN_PASSIVE_TEXT = "Es wird eine Prüfung durchgeführt."
 
 
-@pytest.mark.parametrize("bundle", [ISO, STE], ids=["iso-24495", "asd-ste100"])
-def test_bundle_loads_with_expected_identity(bundle):
+@pytest.mark.parametrize("bundle,prefix,ref", ALL_BUNDLES)
+def test_bundle_loads_with_expected_identity(bundle, prefix, ref):
     rs = Ruleset(bundle)
     assert rs.id == bundle.name
     assert rs.version == "1.0.0"
@@ -43,8 +50,8 @@ def test_bundle_loads_with_expected_identity(bundle):
     assert rs.scorer_path is not None and rs.scorer_path.exists()
 
 
-@pytest.mark.parametrize("bundle", [ISO, STE], ids=["iso-24495", "asd-ste100"])
-def test_bundle_carries_standard_prompts_and_goldens(bundle):
+@pytest.mark.parametrize("bundle,prefix,ref", ALL_BUNDLES)
+def test_bundle_carries_standard_prompts_and_goldens(bundle, prefix, ref):
     assert (bundle / "RULESET.md").exists()
     for name in ("clean.md", "mid.md", "bad.md"):
         assert (bundle / "golden" / name).exists()
@@ -52,12 +59,11 @@ def test_bundle_carries_standard_prompts_and_goldens(bundle):
         prompt = (bundle / name).read_text()
         assert len(prompt) > 400
         # The prompt names the bundle's own rule prefix so findings read back.
-        prefix = "ISO-R" if bundle is ISO else "STE-"
         assert prefix in prompt
 
 
-@pytest.mark.parametrize("bundle", [ISO, STE], ids=["iso-24495", "asd-ste100"])
-def test_bundle_scorer_is_deterministic(bundle):
+@pytest.mark.parametrize("bundle,prefix,ref", ALL_BUNDLES)
+def test_bundle_scorer_is_deterministic(bundle, prefix, ref):
     golden = bundle / "golden" / "mid.md"
     runs = [json.loads(subprocess.run(
         [sys.executable, str(bundle / "scorer.py"), "--file", str(golden), "--json"],
@@ -106,6 +112,9 @@ def test_bare_ruleset_name_resolves_to_the_shipped_bundle(monkeypatch):
     monkeypatch.setenv("RULESET_PATH", "asd-ste100")
     assert ruleset_path() == STE
     assert current().ref == "asd-ste100@1.0.0"
+    monkeypatch.setenv("RULESET_PATH", "din-8581")
+    assert ruleset_path() == DIN
+    assert current().ref == "din-8581@1.0.0"
 
 
 def test_bare_ruleset_name_that_matches_nothing_stays_relative(monkeypatch, tmp_path):
@@ -123,6 +132,18 @@ def test_faa_bundle_ships_no_scorer_of_its_own():
 @pytest.mark.parametrize("bundle,marker", [
     (ISO, "may have failed"),
     (STE, "may have failed"),
-], ids=["iso-24495", "asd-ste100"])
+    (DIN, "könnte gescheitert sein"),
+], ids=["iso-24495", "asd-ste100", "din-8581"])
 def test_prompts_preserve_modality(bundle, marker):
     assert marker in (bundle / "rewrite-prompt-full.txt").read_text()
+
+
+@pytest.mark.asyncio
+async def test_the_german_passive_only_the_din_bundle_flags(monkeypatch):
+    monkeypatch.setenv("RULESET_PATH", str(DIN))
+    din = await score_text(GERMAN_PASSIVE_TEXT, current().scorer_path)
+    monkeypatch.setenv("RULESET_PATH", str(ISO))
+    iso = await score_text(GERMAN_PASSIVE_TEXT, current().scorer_path)
+    assert din["score"] < iso["score"]
+    assert {f["rule"] for f in din["findings"]} & {"DIN-R4"}
+    assert iso["score"] == 100  # the English layers have no German detector

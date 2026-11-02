@@ -1,0 +1,9 @@
+{
+  "id": "din-8581",
+  "version": "1.0.0",
+  "bar": 80,
+  "scorer": "DIN8581/1.0",
+  "language": "de",
+  "source": "DIN 8581-1 (2024-04-26) Einfache Sprache — Anwendung für das Deutsche — Teil 1: Sprachspezifische Festlegungen; encoded from publicly documented rule clauses, not the copyrighted standard text. German-language standard: score German prose.",
+  "modes": ["minimal", "full"]
+}
