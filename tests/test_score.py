@@ -41,7 +41,7 @@ async def test_score_report_shape():
     text = "Short active sentence. You can read it in one pass."
     report = await score_text(text)
     assert set(report) == {"path", "score", "band", "words", "avg_sentence_words", "findings", "version"}
-    assert report["version"] == "WPS/1.1"
+    assert report["version"] == "WPS/1.2"
 
 
 async def test_score_text_skips_code_and_frontmatter():

@@ -22,7 +22,7 @@ def test_default_bundle_loads_with_expected_identity():
     assert rs.version == "1.0.0"
     assert rs.ref == "faa-plain-language@1.0.0"
     assert rs.bar == 80
-    assert rs.scorer == "WPS/1.1"
+    assert rs.scorer == "WPS/1.2"
 
 
 def test_bundle_carries_the_standard_and_goldens():

@@ -17,7 +17,7 @@ import os
 import re
 import sys
 
-VERSION = "WPS/1.1"
+VERSION = "WPS/1.2"
 BAR = 80
 GREEN = 90
 CONCERN = 65
@@ -101,6 +101,23 @@ ACRO_WHITELIST = {
     "CVE", "SQL", "UTC", "RFC", "WAF", "CDN", "GPU", "CPU", "RAM", "SSD",
     "PVC", "PV", "CRD", "PID", "CLI", "PDF", "SLO", "SLA", "TTS", "UI",
     "UX", "QA", "README", "TODO", "J",
+    # shared technical vocabulary (2026-11-03 iteration)
+    "TTL", "LAN", "JS", "GUI", "GC", "CDP", "CSS", "DB", "OS", "HTML",
+    "IPC", "MBP", "PST", "ESM", "OMP", "OWUI", "CNPG", "ASR",
+    "CIDR", "SNAT", "VIP", "PPID", "JSONL", "REPL", "RPC",
+    # named constants of specific protocols/formats: one thing, never a term
+    # to expand (same class as RFC1918, but no shared prefix to match on)
+    "NXDOMAIN", "NODATA", "NOPASSWD", "RIFF",
+    # standards designations: the full name is the designation (same class as RFC)
+    "ISO", "DIN", "POSIX", "ASD", "STE100",
+}
+# English words that appear in caps in prose (status labels, emphasis) and are
+# therefore shouts, not acronyms (2026-11-03 iteration). Extend by deliberate
+# edit, noted in the writing standard.
+COMMON_WORDS = {
+    "must", "not", "true", "false", "open", "fixed", "existing", "chosen",
+    "transient", "workflow", "plugin", "shipped", "blocked",
+    "ok", "pass", "fail", "old", "new", "pre", "listen",
 }
 GENERIC_HEADINGS = {
     "general", "overview", "introduction", "misc", "other", "summary",
@@ -314,10 +331,15 @@ def score_file(path):
     lower_words = set(re.findall(r"[a-z]+", prose_all))
     counts = {}
     first_pos = {}
+    compound = {}
     for m in ACRO_RE.finditer(prose_all):
         acro = m.group(0)
         counts[acro] = counts.get(acro, 0) + 1
         first_pos.setdefault(acro, m.start())
+        prev = prose_all[m.start() - 1] if m.start() > 0 else ""
+        nxt = prose_all[m.end()] if m.end() < len(prose_all) else ""
+        if prev == "-" or nxt == "-":
+            compound[acro] = compound.get(acro, 0) + 1
     for acro, count in sorted(counts.items()):
         if acro in ACRO_WHITELIST or acro in ROMAN:
             continue
@@ -328,8 +350,12 @@ def score_file(path):
         base = re.match(r"[A-Z]+", acro).group(0)
         if base in ACRO_WHITELIST:
             continue  # a specific instance of a whitelisted concept (VLAN, RFC terms)
-        if acro.lower() in lower_words:
-            continue  # shouted word (AND, ONLY), not an acronym
+        if acro.lower() in lower_words or acro.lower() in COMMON_WORDS:
+            continue  # shouted word (AND, MUST, FALSE), not an acronym
+        if compound.get(acro) == counts[acro]:
+            continue  # every occurrence sits in a hyphenated designation (35B-A3B)
+        if re.fullmatch(r"SIG[A-Z]{2,}", acro) or re.fullmatch(r"E[A-Z]{4,}", acro):
+            continue  # POSIX signal/errno constant: a name, not an abbreviation
         defined = f"({acro})" in prose_all
         if defined:
             def_pos = prose_all.find(f"({acro})")

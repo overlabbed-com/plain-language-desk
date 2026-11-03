@@ -22,7 +22,7 @@ GOLDEN_DIR = (
     Path(__file__).resolve().parents[1] / "src" / "plain_language_desk" / "rulesets" / "faa-plain-language" / "golden"
 )
 
-VENDOR_SHA256 = "cdeb12d79f11af06f1e0f09cc5a932e72def48c2f0c25644ad7f6fd01bb95d5f"
+VENDOR_SHA256 = "5a790a2da987c4b8506c5554c8a788c40db56fb2255dea79ffde11242d738b72"
 GOLDENS = {
     "clean.md": 95,
     "mid.md": 57,
@@ -51,7 +51,7 @@ def run_vendored(path: Path) -> dict:
 
 def test_vendored_scorer_self_reports_pinned_version():
     data = run_vendored(GOLDEN_DIR / "clean.md")
-    assert data["version"] == "WPS/1.1"
+    assert data["version"] == "WPS/1.2"
 
 
 def test_golden_scores_match_the_mac_original():

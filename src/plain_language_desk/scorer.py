@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 VENDOR_SCORER = Path(__file__).parent / "vendor" / "writing-score.py"
-EXPECTED_VERSION = "WPS/1.1"
+EXPECTED_VERSION = "WPS/1.2"
 SCORER_TIMEOUT = float(os.environ.get("SCORER_TIMEOUT", "60"))
 MAX_TEXT_CHARS = 200_000
 
