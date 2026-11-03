@@ -25,7 +25,7 @@ def test_score_endpoint_returns_the_report_with_the_ruleset_ref():
     resp = client.post("/score", json={"text": "Short active sentence. You can read it in one pass."})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["version"] == "WPS/1.1"
+    assert body["version"] == "WPS/1.2"
     assert body["band"] in {"green", "pass", "concerns", "fail", "exempt"}
     assert body["ruleset"] == "faa-plain-language@1.0.0"
     assert body["bar"] == 80
